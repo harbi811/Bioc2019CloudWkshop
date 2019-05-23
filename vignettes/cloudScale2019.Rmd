@@ -1,33 +1,5 @@
----
-title: "Workshop for Bioc2019: Cloud-scale genomic data science with Bioconductor"
-author: "Vincent J. Carey, stvjc at channing.harvard.edu"
-date: "`r format(Sys.time(), '%B %d, %Y')`"
-vignette: >
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteIndexEntry{cloud scale bioc workshop}
-  %\VignetteEncoding{UTF-8}
-output:
-  BiocStyle::html_document:
-    highlight: pygments
-    number_sections: yes 
-    theme: united
-    toc: yes 
----
 
-
-
-<!--
-Bioconductor's approach to the analysis of genome-scale assays is rooted in commitments to the use of self-describing data objects representing genomic assays and annotation. Analysis tools and workflows based on these objects have proven effective in a large number of scientific projects and publications.
-
-The dominant model for utilization of Bioconductor to date involves a locally controlled deployment of R and Bioconductor/CRAN packages in an essentially closed storage and execution environment.
-
-New approaches to federated elastic computing with lab-resident or commercial cloud environments provide opportunities for inference on questions of vast scope. This workshop is devoted to understanding how to leverage Bioconductor's strengths in seizing these new opportunities. Special attention is devoted to how programming and reporting patterns familiar from two decades of Bioconductor development and use can be retained, or must change, in cloud-scale genomic data science.
-
-Our approach will be a mix of lecture and hands-on programming with Rstudio Cloud. We will learn how the restfulSE and BiocOncoTK packages work with HDF Scalable Data Service and Google BigQuery to provide immediate interactive access to a compendium of 181000 human transcriptomics experiments, and to the PanCancer Atlas. We will also learn how to couple Docker containers with formal workflows in CWL and WDL to achieve sharable reproducible analyses with nearly zero configuration.
-
--->
-
-# Workshop overview
+# Cloud-scale genomic data science with Bioconductor
 
 ## Abstract
 
