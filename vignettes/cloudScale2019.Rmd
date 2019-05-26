@@ -101,7 +101,123 @@ scale analyses
 
 ## Review of Bioconductor software and data structures (10min)
 
-- TxDb + Gviz + HNRNPC + tximport
+Bioconductor uses an approach to object-oriented
+programming to help control complexity of programming
+in the domain of genome-scale data science.
+
+We will illustrate the basic ideas by using a
+catalog of features of the human genome.
+
+```{r setup,echo=FALSE,results="hide"}
+library = function (...) 
+{
+    inisess = sessionInfo()
+    suppressPackageStartupMessages({
+        libdata = base::library(...)
+        newsess = sessionInfo()
+        lstats = libstats(inisess = inisess, newsess = newsess)
+        message(sprintf("%d/%d packages newly attached/loaded, see sessionInfo() for details.", 
+            lstats["addatt"], lstats["addlo"]))
+        invisible(NULL)
+    })
+}
+```
+
+### The S4 classes `EnsDb` and `GRanges`
+
+```{r lktxdb}
+library(EnsDb.Hsapiens.v79)
+EnsDb.Hsapiens.v79
+```
+
+The object named `EnsDb.Hsapiens.v79` mediates access to
+a SQLite database that contains information on the
+Ensembl definitions of genes for reference build
+hg38.  This object is an instance of a class:
+```{r lkcl}
+class(EnsDb.Hsapiens.v79)
+```
+Formal methods are defined for this class:
+```{r lkme}
+methods(class=class(EnsDb.Hsapiens.v79))
+```
+Let's try the `genes` method.
+```{r lkggg}
+genes79 = genes(EnsDb.Hsapiens.v79)
+genome(genes79)[1]
+class(genes79)
+head(genes79[,1:3])
+```
+
+Basic R language elements are given new 
+meaning when applied to structures like `GRanges`.
+Here we use `$` to obtain one of the fields
+of metadata about genes.  The operation returns
+a vector that we summarize using basic R
+functions.
+
+```{r lkso}
+sort(table(genes79$gene_biotype),decreasing=TRUE)[1:6]
+```
+
+`dplyr` idioms can be used with some help (and this may
+become more straightforward over time):
+```{r dodp}
+library(dplyr)
+library(magrittr)
+as.data.frame(mcols(genes79)) %>% 
+  select(gene_name, gene_biotype) %>%
+  filter(gene_biotype == "ribozyme")
+```
+
+`tibble` representations have pleasant summaries:
+```{r lkti}
+library(tibble)
+as.tibble(genes79)
+```
+
+### Finding and visualizing genomic elements in a specified chromosomal region
+
+`GRanges` are easy to construct and can be used to
+query genomes.  Here we deal with three problems related
+to genome region specification.  We start with a
+region specified using coordinates from
+reference build hg19 (GRCh37).  We use UCSC's
+liftOver utility to convert to GRCh38 (hg38).  We
+finish by converting the chromosome annotation to
+that used by Ensembl.
+
+```{r convert}
+myRange = GRanges("chr10", IRanges(37.45e6, 37.8e6))
+myRange
+library(rtracklayer)
+ch = import.chain("hg19ToHg38.over.chain")
+myr38 = liftOver(myRange, ch)[[1]]
+library(GenomeInfoDb)
+genome(myr38) = "GRCh38"
+seqlevelsStyle(myr38) = "Ensembl"
+myr38
+```
+
+It is easy to find 'gene-level' elements using `subsetByOverlaps`:
+```{r getgl}
+els = subsetByOverlaps(genes79, myr38)
+as.tibble(els)
+```
+
+To get a quick view of the layout of these elements on
+their chromosome, we can use Gviz:
+```{r getgv}
+library(Gviz)
+plotTracks(list(GenomeAxisTrack(), 
+  GeneRegionTrack(els, gene=els$symbol)), showId=TRUE)
+```
+
+There are many options available to enhance this display.
+An important task for this region would
+be to distinguish exons and introns.
+See the Gviz vignette for details.
+
 
 ## DelayedArray concepts (5min)
 
