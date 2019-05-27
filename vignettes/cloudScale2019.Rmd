@@ -209,6 +209,7 @@ To get a quick view of the layout of these elements on
 their chromosome, we can use Gviz:
 ```{r getgv}
 library(Gviz)
+options(ucscChromosomeNames=FALSE)
 plotTracks(list(GenomeAxisTrack(), 
   GeneRegionTrack(els, gene=els$symbol)), showId=TRUE)
 ```
@@ -221,7 +222,93 @@ See the Gviz vignette for details.
 
 ## DelayedArray concepts (5min)
 
-- saveHDF5SummarizedExperiment, object.size, EDA, benchmarking
+Our interest in cloud-scale computing methods
+arises in part from desire to analyze very large
+data sets with computers that have relatively small
+endowments of random access memory.  The most common
+methods of working with R assume that all data are
+resident in memory and can be addressed directly.
+
+### Acquisition of breast cancer RNA-seq data from TCGA
+
+In this section we will construct two representations of
+RNA-seq data for breast cancer tumors collected in TCGA.
+First we use `curatedTCGAData` to obtain a standard in-memory
+representation in a SummarizedExperiment.
+```{r dobr, cache=TRUE}
+library(curatedTCGAData)
+brMAE = curatedTCGAData("BRCA", "RNASeq2GeneNorm", dry.run=FALSE)
+brexp = experiments(brMAE)[[1]] # should use name
+colnames(brexp) = substr(colnames(brexp),1,12) # need to shorten
+cd = colData(brMAE)[colnames(brexp),]
+colData(brexp) = cd
+brexp
+```
+We can estimate its size in RAM.
+```{r lkram}
+library(SummarizedExperiment) # assay
+object.size(assay(brexp))
+```
+This is not particularly large, but in certain applications
+it is advantageous to have tight control
+over the memory consumption required for an analysis.  In
+this form we have no choice -- either the complete dataset
+is in memory or it is not and cannot be accessed without
+loading it in its entirety.
+
+### Exporting the expression data to HDF5
+
+Now we develop a representation on disk.  We use
+the HDF5 data format as it is well-established as
+a tool for managing numerical data in
+scientific computing.
+```{r dohdf5}
+library(HDF5Array)
+saveHDF5SummarizedExperiment(brexp, "brexpHDF5", replace=TRUE)
+```
+We named the HDF5 repository for the data `brexpHDF5`; this 
+is in fact a folder created in the current working directory.
+Its contents are a SummarizedExperiment 'shell' in RDS format,
+and the HDF5 matrix representation of the RNA-seq quantifications.
+```{r lkfol}
+dir("brexpHDF5")
+```
+
+### Using the on-disk HDF5 representation
+
+We use a loading function to retrieve the
+new SummarizedExperiment instance.  Its
+memory consumption is independent of the
+dimensions of the assay matrix.
+```{r lkmem2}
+brextern = loadHDF5SummarizedExperiment("brexpHDF5")
+assay(brextern)
+object.size(assay(brextern))
+```
+
+Targeted queries to the HDF5 store are rapidly resolved.
+
+```{r doexpl,fig.height=6}
+par(las=2, mar=c(18,4,3,3))
+boxplot(split(log(as.numeric(assay(brextern["BRCA2",])+1)), 
+   brexp$histological_type), ylab="log BRCA2")
+```
+
+But there is a price to pay.
+```{r domicr}
+library(microbenchmark)
+microbenchmark(
+ split(log(as.numeric(assay(brextern["BRCA2", ]) + 1)), 
+   brexp$histological_type),
+ times=5)
+```
+Compare to the `in memory` benchmark:
+```{r doinm}
+microbenchmark(
+ split(log(as.numeric(assay(brexp["BRCA2", ]) + 1)), 
+   brexp$histological_type),
+ times=5)
+```
 
 ## Exercises with the HumanTranscriptomeCompendium and the HDF Scalable Data Service (10min)
 

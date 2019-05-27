@@ -1,7 +1,7 @@
 Package: BiocCloudws
 Title: Workshop on cloud-scale Bioconductor for Bioc2019
 Description: Workshop materials for cloud-scale Bioconductor for Bioc2019.
-Version: 0.0.2
+Version: 0.0.3
 Author: Vince Carey
 Suggests: knitr
 Depends: R (>= 3.6.0), restfulSE
