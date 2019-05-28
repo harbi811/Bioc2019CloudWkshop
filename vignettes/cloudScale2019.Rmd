@@ -5,7 +5,7 @@ output:
     toc: true
     toc_depth: 3
     fig_width: 5
-bibliography: "`r file.path(system.file(package='cloudbioc.bib', 'vignettes'), 'library.bib')`"
+bibliography: "`r file.path(system.file(package='Bioc2019CloudWkshop', 'vignettes'), 'cloudbioc.bib')`"
 vignette: >
   %\VignetteIndexEntry{cloudBiocWorkshop}
   %\VignetteEngine{knitr::rmarkdown}
