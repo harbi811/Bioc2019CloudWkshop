@@ -1,4 +1,16 @@
-
+---
+output:
+  rmarkdown::html_document:
+    highlight: pygments
+    toc: true
+    toc_depth: 3
+    fig_width: 5
+bibliography: "`r file.path(system.file(package='cloudbioc.bib', 'vignettes'), 'library.bib')`"
+vignette: >
+  %\VignetteIndexEntry{cloudBiocWorkshop}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding[utf8]{inputenc}
+---
 # Cloud-scale genomic data science with Bioconductor
 
 ## Abstract
@@ -244,7 +256,7 @@ cd = colData(brMAE)[colnames(brexp),]
 colData(brexp) = cd
 brexp
 ```
-We can estimate its size in RAM.
+We estimate its size in RAM.
 ```{r lkram}
 library(SummarizedExperiment) # assay
 object.size(assay(brexp))
