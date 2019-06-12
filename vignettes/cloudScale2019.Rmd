@@ -120,31 +120,36 @@ We will illustrate the basic ideas by using a
 catalog of features of the human genome.
 
 ```{r setup,echo=FALSE,results="hide"}
-library = function (...) 
+curatedTCGAData = function(...) {
+ suppressMessages({ curatedTCGAData::curatedTCGAData(...) })
+ }
+library = function (..., silent=TRUE)
 {
-libstats = function(inisess, newsess) {
- inibase = inisess$basePkgs  # unchanging?
- inioth = names(inisess$otherPkgs)
- newbase = newsess$basePkgs
- newoth = names(newsess$otherPkgs)
- iniatt = length(unique(c(inibase,inioth)))
- newatt = length(unique(c(newbase,newoth)))
- addatt = newatt-iniatt
- inilo = names(inisess$loadedOnly)
- newlo = names(newsess$loadedOnly)
- addlo = length(setdiff(newlo, inilo))
- c(addatt=addatt, addlo=addlo)
+  libstats = function(inisess, newsess) {
+   inibase = inisess$basePkgs  # unchanging?
+   inioth = names(inisess$otherPkgs)
+   newbase = newsess$basePkgs
+   newoth = names(newsess$otherPkgs)
+   iniatt = length(unique(c(inibase,inioth)))
+   newatt = length(unique(c(newbase,newoth)))
+   addatt = newatt-iniatt
+   inilo = names(inisess$loadedOnly)
+   newlo = names(newsess$loadedOnly)
+   addlo = length(setdiff(newlo, inilo))
+   c(addatt=addatt, addlo=addlo)
+  }
+      inisess = sessionInfo()
+      suppressPackageStartupMessages({
+          libdata = base::library(..., quietly=TRUE)
+          newsess = sessionInfo()
+          lstats = libstats(inisess = inisess, newsess = newsess)
+          if (!silent) message(sprintf("%d/%d packages newly attached/loaded, see sessionInfo() for details.", 
+              lstats["addatt"], lstats["addlo"]))
+          invisible(NULL)
+      })
 }
-    inisess = sessionInfo()
-    suppressPackageStartupMessages({
-        libdata = base::library(...)
-        newsess = sessionInfo()
-        lstats = libstats(inisess = inisess, newsess = newsess)
-        message(sprintf("%d/%d packages newly attached/loaded, see sessionInfo() for details.", 
-            lstats["addatt"], lstats["addlo"]))
-        invisible(NULL)
-    })
-}
+library(curatedTCGAData)
+library(rhdf5client)
 ```
 
 ### The S4 classes `EnsDb` and `GRanges`
@@ -260,9 +265,11 @@ In this section we will construct two representations of
 RNA-seq data for breast cancer tumors collected in TCGA.
 First we use `curatedTCGAData` to obtain a standard in-memory
 representation in a SummarizedExperiment.
-```{r dobr, cache=TRUE}
+```{r dobr,results="hide"}
 library(curatedTCGAData)
 brMAE = curatedTCGAData("BRCA", "RNASeq2GeneNorm", dry.run=FALSE)
+```
+```{r contin}
 brexp = experiments(brMAE)[[1]] # should use name
 colnames(brexp) = substr(colnames(brexp),1,12) # need to shorten
 cd = colData(brMAE)[colnames(brexp),]
@@ -337,7 +344,77 @@ microbenchmark(
 
 ## Exercises with the HumanTranscriptomeCompendium and the HDF Scalable Data Service (10min)
 
-- Use htx_app or ca43k app
+The HumanTranscriptomeCompendium package was formed to take
+advantage of two new technologies. 
+
+The first is the 
+[OmicIDX](https://omicidx-test.cancerdatasci.org/docs)
+metadata transformation and access facility, devised
+by Dr Sean Davis of NCI.
+This currently provides comprehensive access to metadata
+about sequencing studies collected at NCBI SRA, but will
+be extended to other institutional metadata archives.
+
+The second is HDF Scalable Data Service, devised by
+John Readey of The HDF Group.  Substantial support has been
+provided to Bioconductor by HDF Group, with open hosting
+of significant genomic data archives in a publicly accessible
+server.
+
+Fruits of both of these developments are used in the following
+exercises.
+
+### Command-line work with HumanTranscriptomeCompendium
+
+```{r lkhtc}
+library(HumanTranscriptomeCompendium)
+htxSE = htx_load()
+htxSE
+```
+
+There's a little extra annotation to add.
+```{r doadd}
+htxSE = addRD(htxSE)
+library(SummarizedExperiment)
+head(rowData(htxSE))
+```
+
+We will make a searchable table of study titles and sizes.
+```{r dozsi}
+ad = as.data.frame(colData(htxSE))
+library(dplyr)
+library(magrittr)
+library(DT)
+studtab = (ad %>% select(study_title, study_accession) %>% group_by(study_title, study_accession) %>% summarise(n=n()) %>% as.data.frame()) 
+datatable(studtab)
+```
+
+Search for zika in this table.
+```{r lksub}
+zikp = htxSE[, which(htxSE$study_accession == "SRP075248")]
+assay(zikp)
+```
+
+To acquire additional metadata on this study, you could use SRAdbV2.  We
+will skip that for now.
+
+### The ca43k app
+
+We have a shiny app that mediates access to cancer-related studies in the
+compendium.  Using the following command starts the app.  Clear
+the initial tabs and cart elements.  Search for the
+string 'lncRNAs' and then search the resulting table for 'archived'.
+Then stop the app.
+```{r zz,eval=FALSE}
+cadat = ca43k()
+```
+Now `metadata(cadat)[[2]]` is a data.frame that gives sample-level
+metadata on the samples that were retrieved.  How many different
+tissues were assayed?
+
+Have a look at the paper referenced in the associated PMID.
+Find the lncRNA that the authors assert is specific to breast
+and display its distribution of abundance across tissues.
 
 ## Exercises with PanCancer Atlas and Google BigQuery (10min)
 
