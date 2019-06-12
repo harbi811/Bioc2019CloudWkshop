@@ -123,6 +123,19 @@ catalog of features of the human genome.
 ```{r setup,echo=FALSE,results="hide"}
 library = function (...) 
 {
+libstats = function(inisess, newsess) {
+ inibase = inisess$basePkgs  # unchanging?
+ inioth = names(inisess$otherPkgs)
+ newbase = newsess$basePkgs
+ newoth = names(newsess$otherPkgs)
+ iniatt = length(unique(c(inibase,inioth)))
+ newatt = length(unique(c(newbase,newoth)))
+ addatt = newatt-iniatt
+ inilo = names(inisess$loadedOnly)
+ newlo = names(newsess$loadedOnly)
+ addlo = length(setdiff(newlo, inilo))
+ c(addatt=addatt, addlo=addlo)
+}
     inisess = sessionInfo()
     suppressPackageStartupMessages({
         libdata = base::library(...)
