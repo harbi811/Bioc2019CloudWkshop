@@ -5,7 +5,6 @@ output:
     toc: true
     toc_depth: 3
     fig_width: 5
-bibliography: "`r file.path(system.file(package='Bioc2019CloudWkshop', 'vignettes'), 'cloudbioc.bib')`"
 vignette: >
   %\VignetteIndexEntry{cloudBiocWorkshop}
   %\VignetteEngine{knitr::rmarkdown}
@@ -233,6 +232,7 @@ as.tibble(els)
 To get a quick view of the layout of these elements on
 their chromosome, we can use Gviz:
 ```{r getgv}
+library(survival)
 library(Gviz)
 options(ucscChromosomeNames=FALSE)
 plotTracks(list(GenomeAxisTrack(), 
