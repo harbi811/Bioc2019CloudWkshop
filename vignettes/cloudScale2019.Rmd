@@ -418,4 +418,154 @@ and display its distribution of abundance across tissues.
 
 ## Exercises with PanCancer Atlas and Google BigQuery (10min)
 
+The PanCancer Atlas builds on TCGA by including a number
+of matched normal tissue samples subjected to many of
+the same assay processes as the tumor tissues.
+
+In this section we'll create SummarizedExperiment
+instances for 450k methylation assays in bladder cancer.
+
+### Some background on PanCancer Atlas data in the ISB Cancer Genomics Cloud project
+
+The names of resources available for PanCancer atlas
+are somewhat unwieldy.  We've created abbreviations.
+```{r lkbpc, results="hide"}
+library(BiocOncoTK)
+```
+```{r chkanno}
+anndf = data.frame(abbr=names(
+  BiocOncoTK::annotTabs), tabname=as.character(BiocOncoTK::annotTabs))
+datatable(anndf)
+```
+
+In this section you must have environment variable
+`CGC_BILLING` set to a valid google cloud platform
+billing account.
+
+### Creating a 'RESTful' SummarizedExperiment with BigQuery references for assay data
+
+```{r lkpc, results="hide", eval=FALSE}
+library(BiocOncoTK)
+bq = pancan_BQ()
+bq@quiet = TRUE
+se1 = buildPancanSE(bq)
+```
+```{r lkcanse, eval=FALSE}
+se1
+
+## class: RangedSummarizedExperiment 
+## dim: 396065 409 
+## metadata(3): acronym assay sampType
+## assays(1): assay
+## rownames(396065): cg00000029 cg00000165 ... rs966367 rs9839873
+## rowData names(3): gene_id gene_name gene_biotype
+## colnames(409): TCGA-FD-A3SN TCGA-FD-A5BV ... TCGA-UY-A78L
+##   TCGA-ZF-AA4T
+## colData names(20): bcr_patient_uuid bcr_patient_barcode ...
+##   radiation_therapy race
+
+```
+```
+assay(se1)
+
+## <396065 x 409> DelayedMatrix object of type "double":
+##            TCGA-FD-A3SN TCGA-FD-A5BV ... TCGA-UY-A78L TCGA-ZF-AA4T
+## cg00000029    0.0954445    0.0687728   .     0.162314     0.172125
+## cg00000165    0.8368510    0.1360180   .     0.623998     0.387653
+## cg00000236    0.9393230    0.9227600   .     0.873759     0.904457
+## cg00000289    0.7025300    0.7373440   .     0.641360     0.609875
+## cg00000292    0.7530310    0.8062190   .     0.729177     0.505125
+##        ...            .            .   .            .            .
+##  rs9363764    0.9462190    0.9424980   .    0.4760480    0.0337384
+##   rs939290    0.0228799    0.9769100   .    0.9669960    0.9753450
+##   rs951295    0.3357700    0.0386658   .    0.5140070    0.7081640
+##   rs966367    0.9464320    0.9492910   .    0.8572390    0.4777650
+##  rs9839873    0.9548290    0.2012180   .    0.9278950    0.9552880
+```
+
+### Comparing methylation levels between tumor and matched normal tissues at a specific CpG probe
+
+In PMID 29540343 it is noted that increased methylation at
+CpG probe cg22748573 (within exon 1 of CITED4)
+is associated with decreased risk
+of bladder cancer.  We'll use tumor-normal pairs to
+check for differential methylation in tumor tissue at 
+this site.
+
+
+```{r lkcpg, eval=FALSE}
+nor = buildPancanSE(bq, sampType="NT")
+nor
+kp = intersect(colnames(nor), colnames(se1)) 
+norsel = nor["cg22748573",kp]
+se1sel = se1["cg22748573",kp]
+nornum = as.matrix(assay(norsel))
+se1num = as.matrix(assay(se1sel))
+t.test(se1num-nornum)
+plot(as.numeric(nornum), as.numeric(se1num), ylim=c(0,.5), xlim=c(0,.5))
+abline(0,1)
+```
+
 ## Docker and CWL/WDL with Dockstore.org (10min)
+
+dockstore.org implements a GA4GH concept of reproducible
+research by connecting a CWL/WDL workflow program to a
+docker container that is endowed with everything needed
+to execute the workflow.
+
+An example workflow is available, that [annotates variants
+observed in a given Coriell cell line sample]
+(https://dockstore.org/workflows/github.com/vjcitn/vardemo/AnnotatingWGSVariantsWithBioc:master?tab=info).
+
+### A WDL program
+
+The main components are `workflow` and `task`.  Tasks are
+called within the workflow element.  In this example
+the task consists of a command, and declarations of
+output and runtime.
+
+```
+workflow task1 {
+  call doVariantWorkflow { }
+}
+
+task doVariantWorkflow {
+  command {
+    R -e "BiocManager::install('variants', version = '3.9', update=TRUE, ask=FALSE); \
+		library('variants'); \
+		file <- system.file('vcf', 'NA06985_17.vcf.gz', package = 'cgdv17'); \
+		genesym <- 'ORMDL3'; \
+		geneid <- select(org.Hs.eg.db, keys=genesym, keytype='SYMBOL', \
+		         columns='ENTREZID'); \
+		txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene; \
+		seqlevelsStyle(txdb) = 'NCBI'; \
+		txdb = keepStandardChromosomes(txdb); \
+		txdb <- keepSeqlevels(txdb, '17'); \
+		txbygene = transcriptsBy(txdb, 'gene'); \
+		gnrng <- unlist(range(txbygene[geneid[['ENTREZID']]]), use.names=FALSE); \
+		names(gnrng) <- geneid[['SYMBOL']]; \
+		param <- ScanVcfParam(which = gnrng+20000, info = 'DP', geno = c('GT', 'cPd')); \
+		vcf <- readVcf(file, 'hg19', param); \
+		seqlevels(vcf)[25] = 'MT'; \
+		ans = locateVariants(vcf, txdb, AllVariants()); \
+		table(mcols(ans)[['LOCATION']]); \
+		names(ans) = make.names(names(ans), unique=TRUE); \
+		ans = as.data.frame(ans); \
+		rownames(ans) = make.names(rownames(ans), unique=TRUE); \
+                write.csv(ans, 'trpvar.csv');"
+  }
+  output {
+      File out1 = "trpvar.csv"
+  }
+  runtime {
+    disks: "local-disk 40 HDD"
+    bootDiskSizeGb: 50
+    docker: "waldronlab/bioconductor_devel"
+    }
+}
+```
+
+Note that the dockstore includes capacity to easily submit
+the workflow to a hosted cloud computing service.
+
+![Dockstore launch](button.png)
