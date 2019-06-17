@@ -220,7 +220,8 @@ that used by Ensembl.
 myRange = GRanges("chr10", IRanges(37.45e6, 37.8e6))
 myRange
 library(rtracklayer)
-ch = import.chain("hg19ToHg38.over.chain")
+ch = import.chain(system.file("vignettes/hg19ToHg38.over.chain", 
+  package="BiocCloudws"))
 myr38 = liftOver(myRange, ch)[[1]]
 library(GenomeInfoDb)
 genome(myr38) = "GRCh38"
@@ -568,4 +569,8 @@ task doVariantWorkflow {
 Note that the dockstore includes capacity to easily submit
 the workflow to a hosted cloud computing service.
 
-![Dockstore launch](button.png)
+```{r demopl,echo=FALSE,fig.width=11}
+grid::grid.raster(png::readPNG(
+ system.file("vignettes/button.png", package="BiocCloudws")), width=1.0)
+```
+
