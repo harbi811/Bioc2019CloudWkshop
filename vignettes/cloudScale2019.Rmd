@@ -108,8 +108,6 @@ Objectives:
 expression in establishing reproducible and shareable large
 scale analyses 
 
-# Course activities
-
 ## Review of Bioconductor software and data structures (10min)
 
 Bioconductor uses an approach to object-oriented
@@ -569,8 +567,34 @@ task doVariantWorkflow {
 Note that the dockstore includes capacity to easily submit
 the workflow to a hosted cloud computing service.
 
-```{r demopl,echo=FALSE,fig.width=11}
-grid::grid.raster(png::readPNG(
- system.file("vignettes/button.png", package="BiocCloudws")), width=1.0)
-```
+`r knitr::include_graphics(system.file(package='BiocCloudws', 'vignettes', 'button.png'))`
 
+## Summary
+
+We had two main concerns.  First, we reviewed the integrated
+approach to genome-scale metadata and data representation exemplified
+in `EnsDb`, `GRanges`, and `SummarizedExperiment` instances.
+Second, we demonstrated how external data resources can be
+connected to R-based analyses through these representations.
+We showed how local HDF5 stores can be created and queried
+through the utilities provided with the `HDF5Array` package.
+We showed how remote HDF5 can be queried using `restfulSE`
+concepts.  All of this proceeds without concern for authentication.
+
+In our final sections, we indicated how Google BigQuery can
+be used behind a SummarizedExperiment interface, and how the
+combination of a Docker container and a WDL program
+can be used to specify a reproducible (and potentially parameterized)
+workflow project, which can be submitted for execution in a system
+such as Terra or DNANexus.  These examples require attention
+to authentication and billing setup.
+
+We conclude that it is fruitful to think about unifying abstractions
+for complex collections of genomic assays and annotation.  A good
+example is the `MultiAssayExperiment` structure that is generated
+very naturally with the `curatedTCGAData` package.  We can work such
+structures without regard for the physical disposition of the
+data, once protocols like `DelayedArray` are implemented for
+alternative back-ends that we find productive for handling
+numerical arrays or other fundamental data structures for genome-scale
+analysis.
