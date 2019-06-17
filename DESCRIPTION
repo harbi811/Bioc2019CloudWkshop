@@ -6,7 +6,7 @@ Author: Vince Carey
 Suggests: knitr, EnsDb.Hsapiens.v79, GenomeInfoDb, Gviz, HDF5Array,
     SummarizedExperiment, curatedTCGAData, dplyr, magrittr,
     microbenchmark, rtracklayer, tibble, survival, HumanTranscriptomeCompendium,
-    BioOncoTK
+    BiocOncoTK
 Depends: R (>= 3.6.0), restfulSE
 Maintainer: VJ Carey <stvjc@channing.harvard.edu>
 License: Artistic-2.0
